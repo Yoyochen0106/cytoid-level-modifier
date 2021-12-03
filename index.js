@@ -6,7 +6,46 @@ let gp = {
 }
 
 function checkZip() {
+    if (gp.zip === undefined || gp.zip === null) {
+        alert('No level file uploaded');
+        return false;
+    }
     return true;
+}
+
+function isFileSelected(inputElem) {
+    return inputElem.files.length >= 1;
+}
+
+function isLevelFileUploaded() {
+    return isFileSelected($("#cytlvl-file")[0]);
+}
+
+class Proc {
+    constructor() {
+    }
+    load(fname) {
+    }
+    getOldMusic() {
+    }
+    setInfo(info) {
+    }
+    setNewMusic(content) {
+    }
+    export() {
+    }
+}
+
+function loadLevelFile() {
+    let input = $("#cytlvl-file")[0];
+
+    console.log(input.files[0]);
+    // gp.d = input.files[0];
+    return input.files[0].arrayBuffer()
+        .then((content) => {
+            let zip = new JSZip();
+            return zip.loadAsync(content);
+        })
 }
 
 $(document).ready(() => {
@@ -15,23 +54,17 @@ $(document).ready(() => {
 
     $("#btn-load-file").on("click", () => {
         console.log("load");
-        let input = $("#cytlvl-file")[0];
-        if (input.files.length >= 1) {
-            let fReader = new FileReader();
-            console.log(input.files[0]);
-            // gp.d = input.files[0];
-            fReader.readAsArrayBuffer(input.files[0]);
-            fReader.onloadend = (event) => {
-                let data = event.target.result;
-                let zip = new JSZip();
-                zip.loadAsync(data)
-                    .then((zip) => {
-                        gp.zip = zip;
-                    });
-            };
-        } else {
+
+        if (!isLevelFileUploaded()) {
             alert("No file selected")
+            return;
         }
+
+        loadLevelFile()
+            .then((zip) => {
+                gp.zip = zip;
+            });
+
     });
 
     $("#btn-download-music").on("click", () => {
@@ -55,7 +88,6 @@ $(document).ready(() => {
             }
 
             let path = obj.music.path;
-            console.log(path);
             zip.file(path).async('arraybuffer')
                 .then((content) => {
                     console.log(path);
@@ -66,6 +98,24 @@ $(document).ready(() => {
             gp.obj = obj;
         })
     });
+
+    $('#btn-export').on('click', () => {
+        let out;
+        loadLevelFile()
+            .then((out_) => {
+                out = out_;
+                let input = $('#new-music')[0]
+                if (input.files.length < 1) {
+                    alert('No music uploaded');
+                    throw 'error';
+                }
+
+                return input.files[0].arrayBuffer()
+            })
+            .then((content) => {
+                out.file('level')
+            })
+    })
 
 })
 
