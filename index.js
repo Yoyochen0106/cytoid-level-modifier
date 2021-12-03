@@ -19,7 +19,7 @@ $(document).ready(() => {
         if (input.files.length >= 1) {
             let fReader = new FileReader();
             console.log(input.files[0]);
-            gp.d=input.files[0]
+            // gp.d = input.files[0];
             fReader.readAsArrayBuffer(input.files[0]);
             fReader.onloadend = (event) => {
                 let data = event.target.result;
@@ -50,12 +50,17 @@ $(document).ready(() => {
                 return;
             }
 
+            function arraybuffer2blob(buffer) {
+                return new Blob([new Uint8Array(buffer, 0, buffer.length)]);
+            }
+
             let path = obj.music.path;
+            console.log(path);
             zip.file(path).async('arraybuffer')
                 .then((content) => {
                     console.log(path);
-                    let ext = path.split('/').pop();
-                    saveAs(content, `music.${ext}`);
+                    let ext = path.split('.').pop();
+                    saveAs(arraybuffer2blob(content), `music.${ext}`);
                 })
 
             gp.obj = obj;
