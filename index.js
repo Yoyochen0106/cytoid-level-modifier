@@ -23,16 +23,33 @@ function isLevelFileUploaded() {
 
 class Proc {
     constructor() {
+        this.zip = null;
     }
-    load(fname) {
+
+    load(file) {
+        // Load cytoidlevel file content
+        return file.arrayBuffer()
+            .then((content) => {
+                let zip = new JSZip();
+                return zip.loadAsync(content);
+            })
     }
+
     getOldMusic() {
+        // Get the music file to download to change speed
+        this.zip.file("level.json")
+            then((content) => {
+                (content)
+            })
     }
     setInfo(info) {
+        // Set newly generated level informations
     }
     setNewMusic(content) {
+        // Set uploaded new music file
     }
     export() {
+        // Export the generated cytoidlevel file content to download
     }
 }
 
