@@ -8,10 +8,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script src="index.js"></script>
   </head>
   <body>
     <p>Upload cytoidlevel file</p>
-    <input id="cylvl-file" type="file">
+    <p>
+      <input id="cytlvl-file" type="file">
+    </p>
+
+    <button id="btn-load-file">Load</button>
 
     <p>Enter parameters to modify</p>
     <table>
@@ -30,7 +36,7 @@
     </table>
 
     <p>Download music in cytoidlevel to change the speed</p>
-    <button id="download-music">Download</button>
+    <button id="btn-download-music">Download</button>
     
     <p>Upload the music file with speed changed</p>
     <input id="new-music" type="file">
