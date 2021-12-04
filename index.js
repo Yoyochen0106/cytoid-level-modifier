@@ -7,7 +7,7 @@ let gp = {
 
 function checkZip() {
     if (gp.zip === undefined || gp.zip === null) {
-        alert('No level file uploaded');
+        alert("No level file uploaded");
         return false;
     }
     return true;
@@ -91,6 +91,8 @@ $(document).ready(() => {
                 }
 
                 gp.obj = obj;
+
+                console.log("Load done");
             });
 
     });
@@ -107,41 +109,158 @@ $(document).ready(() => {
         }
 
         let path = obj.music.path;
-        zip.file(path).async('arraybuffer')
+        zip.file(path).async("arraybuffer")
             .then((content) => {
                 console.log(path);
-                let ext = path.split('.').pop();
+                let ext = path.split(".").pop();
                 saveAs(arraybuffer2blob(content), `music.${ext}`);
             })
     });
 
-    $('#btn-export').on('click', () => {
+    $("#btn-export").on("click", () => {
         let {zip, obj} = gp;
         let out;
-        let outObj;
 
-        let input = $('#new-music')[0]
+        let input = $("#new-music")[0]
         if (input.files.length < 1) {
-            alert('No music uploaded');
-            throw 'error';
+            alert("No music uploaded");
+            throw "error";
         }
         let newMusicFile = input.files[0];
 
         let musicPathZ = obj.music.path;
 
-        loadLevelFile()
-            .then((out_) => {
-                out = out_;
+        let inputElem_speedFactor = $("#input-spd-factor")[0];
+        let speedFactor = new Number(inputElem_speedFactor.value)
+        if (isNaN(speedFactor)) {
+            alert("Invalid speed factor")
+            return;
+        }
+
+        // Copy cytoidlevel file
+        let outZip = new JSZip();
+        let outObj;
+        let chartObj;
+        let levelId;
+        outZip.loadAsync(gp.zipContent)
+            .then((_) => {
+                return outZip.file("level.json").async("string")
+            })
+            .then((content) => {
+                // Set ID & title
+                console.log(1);
+                outObj = JSON.parse(content)
+                console.log(2);
+
+                let spd_text = `x${speedFactor.toFixed(2)}`
+                levelId = `yoyochen.spdmod.${spd_text}.${outObj.id}`
+                outObj.id = levelId
+                outObj.title = `${outObj.title} ${spd_text}`
+
+                console.log(`spd: ${spd_text}`);
+                console.log(outObj.id, outObj.title);
+
+                chartObj = outObj.charts[0]
+                console.log("diff ", chartObj.difficulty)
+
+                chartObj.difficulty = 0
+                console.log(3);
+                return outZip.file(chartObj.path).async("string")
+            })
+            .then((content) => {
+                console.log(4);
+                let chart = parse_chart(content)
+                change_chart_speed(chart, speedFactor)
+                let encodedContent = encode_chart(chart)
+                outZip.file(chartObj.path, encodedContent)
                 return newMusicFile.arrayBuffer()
             })
             .then((content) => {
-                out.file(musicPathZ, content);
+                outZip.file(musicPathZ, content);
+                console.log(5);
+                outZip.file("level.json", JSON.stringify(outObj, null, 2));
+                console.log(6);
 
+                return outZip.generateAsync({ type: "blob" })
+            })
+            .then((content) => {
+                let newLevelFileName = `${levelId}.cytoidlevel`
+                saveAs(content, newLevelFileName)
+                console.log("Export done");
             })
     })
 
-    $('#btn-test').on('click', () => {
+    $("#btn-test").on("click", () => {
     })
 
 })
+
+function parse_chart(string) {
+    let lines = string.split(/\r?\n/)
+    const chart = {
+        notes: [],
+        links: [],
+    }
+    function match(head, str) {
+        return head.includes(str);
+    }
+    for (let line of lines) {
+        let items = line.split(/(?:\t| )+/)
+        if (items.length < 1) continue;
+
+        let head = items[0]
+        if (match(head, "VERSION"))
+            chart.version = new Number(items[1])
+        if (match(head, "BPM"))
+            chart.bpm = new Number(items[1])
+        if (match(head, "PAGE_SHIFT"))
+            chart.page_shift = new Number(items[1])
+        if (match(head, "PAGE_SIZE"))
+            chart.page_size = new Number(items[1])
+        if (match(head, "NOTE"))
+            chart.notes.push({
+                id: new Number(items[1]),
+                timing: new Number(items[2]),
+                x: new Number(items[3]),
+                duration: new Number(items[4]),
+            })
+        if (match(head, "LINK"))
+            chart.links.push(items.slice(1).map(i => new Number(i)))
+    }
+    let params = [chart.version, chart.bpm, chart.page_shift, chart.page_size]
+    if (params.some(isNaN)) {
+        alert("Invalid chart")
+        throw "error";
+    }
+    return chart;
+}
+
+function encode_chart(chart) {
+    let lines = [
+        `VERSION ${chart.version.toFixed(0)}`,
+        `BPM ${chart.bpm}`,
+        `PAGE_SHIFT ${chart.page_shift}`,
+        `PAGE_SIZE ${chart.page_size}`,
+    ]
+    for (let note of chart.notes) {
+        lines.push(`NOTE\t${note.id}\t${note.timing}\t${note.x}\t${note.duration}`)
+    }
+    for (let link of chart.links) {
+        let ids = link.map(id => id.toFixed(0)).join(" ")
+        lines.push(`LINK ${ids}`)
+    }
+    return lines.join("\n")
+}
+
+function change_chart_speed(chart, factor) {
+
+    chart.bpm *= factor
+    chart.page_shift /= factor
+    chart.page_size /= factor
+    chart.notes.forEach(note => {
+        note.timing /= factor
+        note.duration /= factor
+    })
+
+}
 
