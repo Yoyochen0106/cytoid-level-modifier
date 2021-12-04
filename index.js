@@ -13,14 +13,6 @@ function checkZip() {
     return true;
 }
 
-function isFileSelected(inputElem) {
-    return inputElem.files.length >= 1;
-}
-
-function isLevelFileUploaded() {
-    return isFileSelected($("#cytlvl-file")[0]);
-}
-
 class Proc {
     constructor() {
         this.zip = null;
@@ -72,14 +64,33 @@ $(document).ready(() => {
     $("#btn-load-file").on("click", () => {
         console.log("load");
 
-        if (!isLevelFileUploaded()) {
+        let inputElem = $("#cytlvl-file")[0];
+
+        if (inputElem.files.length < 1) {
             alert("No file selected")
             return;
-        }
+        }    
 
-        loadLevelFile()
+        return inputElem.files[0].arrayBuffer()
+            .then((content) => {
+                gp.zipContent = content;
+                let zip = new JSZip();
+                return zip.loadAsync(content);
+            })
             .then((zip) => {
                 gp.zip = zip;
+                return zip.file("level.json").async("string");
+            })
+            .then((content) => {
+                let obj;
+                try {
+                    obj = JSON.parse(content)
+                } catch (e) {
+                    alert("Cannot parse level");
+                    return;
+                }
+
+                gp.obj = obj;
             });
 
     });
@@ -89,49 +100,47 @@ $(document).ready(() => {
 
         console.log("download music");
         
-        let {zip} = gp;
+        let {zip, obj} = gp;
 
-        zip.file("level.json").async("string").then((content) => {
-            let obj;
-            try {
-                obj = JSON.parse(content)
-            } catch (e) {
-                alert("Cannot parse level");
-                return;
-            }
+        function arraybuffer2blob(buffer) {
+            return new Blob([new Uint8Array(buffer, 0, buffer.length)]);
+        }
 
-            function arraybuffer2blob(buffer) {
-                return new Blob([new Uint8Array(buffer, 0, buffer.length)]);
-            }
-
-            let path = obj.music.path;
-            zip.file(path).async('arraybuffer')
-                .then((content) => {
-                    console.log(path);
-                    let ext = path.split('.').pop();
-                    saveAs(arraybuffer2blob(content), `music.${ext}`);
-                })
-
-            gp.obj = obj;
-        })
+        let path = obj.music.path;
+        zip.file(path).async('arraybuffer')
+            .then((content) => {
+                console.log(path);
+                let ext = path.split('.').pop();
+                saveAs(arraybuffer2blob(content), `music.${ext}`);
+            })
     });
 
     $('#btn-export').on('click', () => {
+        let {zip, obj} = gp;
         let out;
+        let outObj;
+
+        let input = $('#new-music')[0]
+        if (input.files.length < 1) {
+            alert('No music uploaded');
+            throw 'error';
+        }
+        let newMusicFile = input.files[0];
+
+        let musicPathZ = obj.music.path;
+
         loadLevelFile()
             .then((out_) => {
                 out = out_;
-                let input = $('#new-music')[0]
-                if (input.files.length < 1) {
-                    alert('No music uploaded');
-                    throw 'error';
-                }
-
-                return input.files[0].arrayBuffer()
+                return newMusicFile.arrayBuffer()
             })
             .then((content) => {
-                out.file('level')
+                out.file(musicPathZ, content);
+
             })
+    })
+
+    $('#btn-test').on('click', () => {
     })
 
 })

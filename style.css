@@ -5,7 +5,7 @@ body {
     padding-left: 10%;
 }
 
-p {
+p, input {
     font-family: 'Courier New', Courier, monospace;
     font-size: large;
     font-weight: bold;
@@ -14,4 +14,18 @@ p {
 table {
     font-family: 'Courier New', Courier, monospace;
     font-size: medium;
+}
+
+.test, button, input {
+    background-color: #bbb;
+    border-color: #ddd;
+    border-radius: 3pt;
+    border-width: 3pt;
+    /* width: 50pt; */
+    height: 20pt;
+}
+
+button:hover {
+    background-color: #ddd;
+    border-color: #bbb;
 }
