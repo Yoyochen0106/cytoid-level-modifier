@@ -1,0 +1,12 @@
+
+level.json format
+https://cytoid.wiki/en/charting/finish/level-json.html#schema-version-level-version-and-level-id
+
+Rarark v2 chart format
+https://github.com/Cytoid/Cytoid/wiki/b.-%E8%B0%B1%E9%9D%A2%E6%A0%BC%E5%BC%8F
+
+C2 chart format
+https://cytoid.wiki/vi/charting/chart-json.html
+
+Online music speed changer
+https://app.musicspeedchanger.com/

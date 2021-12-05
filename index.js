@@ -169,9 +169,38 @@ $(document).ready(() => {
             })
             .then((content) => {
                 console.log(4);
-                let chart = parse_chart(content)
-                change_chart_speed(chart, speedFactor)
-                let encodedContent = encode_chart(chart)
+                
+                // Determine chart type
+                let chart;
+                let type = null;
+                try {
+                    chart = parse_Rv2_chart(content)
+                    type = "Rv2"
+                } catch (e) {
+                }
+                try {
+                    chart = parse_C2_chart(content)
+                    type = "C2"
+                } catch (e) {
+                }
+
+                console.log(`Chart type: ${type}`);
+                
+                let encodedContent;
+
+                if (type === null) {
+                    alert('Invalid chart format')
+                    throw "error"
+                } else if (type === "Rv2") {
+                    console.log(`Process Rv2`);
+                    change_Rv2_chart_speed(chart, speedFactor)
+                    encodedContent = encode_Rv2_chart(chart)
+                } else if (type === "C2") {
+                    console.log(`Process C2`);
+                    change_C2_chart_speed(chart, speedFactor)
+                    encodedContent = encode_C2_chart(chart)
+                }
+
                 outZip.file(chartObj.path, encodedContent)
                 return newMusicFile.arrayBuffer()
             })
@@ -179,11 +208,23 @@ $(document).ready(() => {
                 outZip.file(musicPathZ, content);
                 console.log(5);
                 outZip.file("level.json", JSON.stringify(outObj, null, 2));
-                console.log(6);
 
-                return outZip.generateAsync({ type: "blob" })
+                let progressElem = $('#export-progress')[0];
+                // To tell user that the process has started
+                progressElem.value = 10;
+
+                return outZip.generateAsync(
+                    { type: "blob" },
+                    (metadata) => {
+                        let {percent, currentFile} = metadata;
+                        let value = (percent / 100.0) * 1000.0
+                        console.log(`prog: ${percent} ${value}`);
+                        progressElem.value = value;
+                    }
+                )
             })
             .then((content) => {
+                console.log("Generated");
                 let newLevelFileName = `${levelId}.cytoidlevel`
                 saveAs(content, newLevelFileName)
                 console.log("Export done");
@@ -195,7 +236,7 @@ $(document).ready(() => {
 
 })
 
-function parse_chart(string) {
+function parse_Rv2_chart(string) {
     let lines = string.split(/\r?\n/)
     const chart = {
         notes: [],
@@ -229,13 +270,12 @@ function parse_chart(string) {
     }
     let params = [chart.version, chart.bpm, chart.page_shift, chart.page_size]
     if (params.some(isNaN)) {
-        alert("Invalid chart")
         throw "error";
     }
     return chart;
 }
 
-function encode_chart(chart) {
+function encode_Rv2_chart(chart) {
     let lines = [
         `VERSION ${chart.version.toFixed(0)}`,
         `BPM ${chart.bpm}`,
@@ -252,7 +292,7 @@ function encode_chart(chart) {
     return lines.join("\n")
 }
 
-function change_chart_speed(chart, factor) {
+function change_Rv2_chart_speed(chart, factor) {
 
     chart.bpm *= factor
     chart.page_shift /= factor
@@ -264,3 +304,36 @@ function change_chart_speed(chart, factor) {
 
 }
 
+function parse_C2_chart(string) {
+    let obj;
+    try {
+        obj = JSON.parse(string)
+    } catch (e) {
+        throw "error"
+    }
+    return obj
+}
+
+function change_C2_chart_speed(chart, factor) {
+    // chart.time_base never changed
+    chart.music_offset /= factor;
+    // chart.page_list.forEach(page => {
+    //     page.start_tick /= factor;
+    //     page.end_tick /= factor;
+    // })
+    chart.tempo_list.forEach(tempo => {
+        tempo.tick /= factor;
+        tempo.value /= factor; // in nanoseconds
+    })
+    // chart.event_order_list currently not supported
+
+    // Change of tempo applies to the notes
+    // chart.note_list.forEach(note => {
+    //     note.tick /= factor;
+    //     note.hold_tick /= factor;
+    // })
+}
+
+function encode_C2_chart(chart) {
+    return JSON.stringify(chart)
+}

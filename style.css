@@ -11,6 +11,11 @@ p, input {
     font-weight: bold;
 }
 
+input {
+    padding-left: 2pt;
+    padding-bottom: 3pt;
+}
+
 table {
     font-family: 'Courier New', Courier, monospace;
     font-size: medium;
@@ -28,4 +33,9 @@ table {
 button:hover {
     background-color: #ddd;
     border-color: #bbb;
+}
+
+progress {
+    width: 300pt;
+    height: 20pt;
 }
