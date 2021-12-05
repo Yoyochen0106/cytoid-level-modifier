@@ -168,7 +168,9 @@ $(document).ready(() => {
                 console.log(`spd: ${spd_text}`);
                 console.log(outObj.id, outObj.title);
 
-                chartObj = outObj.charts[0]
+                chartObj = outObj.charts.reduce(
+                    (prev, curr) => ((curr.difficulty > prev.difficulty) ? curr : prev)
+                )
                 console.log("diff ", chartObj.difficulty)
 
                 chartObj.difficulty = 0
