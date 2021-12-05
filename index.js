@@ -131,9 +131,17 @@ $(document).ready(() => {
         let musicPathZ = obj.music.path;
 
         let inputElem_speedFactor = $("#input-spd-factor")[0];
+        let inputElem_horiScaleFactor = $("#input-hori-scale-factor")[0];
+
         let speedFactor = new Number(inputElem_speedFactor.value)
         if (isNaN(speedFactor)) {
             alert("Invalid speed factor")
+            return;
+        }
+
+        let horiScaleFactor = new Number(inputElem_horiScaleFactor.value)
+        if (isNaN(horiScaleFactor)) {
+            alert("Invalid horizontal compress value")
             return;
         }
 
@@ -188,16 +196,21 @@ $(document).ready(() => {
                 
                 let encodedContent;
 
+                let params = {
+                    speedFactor: speedFactor,
+                    horiScaleFactor: horiScaleFactor,
+                }
+
                 if (type === null) {
                     alert('Invalid chart format')
                     throw "error"
                 } else if (type === "Rv2") {
                     console.log(`Process Rv2`);
-                    change_Rv2_chart_speed(chart, speedFactor)
+                    change_Rv2_chart_speed(chart, params)
                     encodedContent = encode_Rv2_chart(chart)
                 } else if (type === "C2") {
                     console.log(`Process C2`);
-                    change_C2_chart_speed(chart, speedFactor)
+                    change_C2_chart_speed(chart, params)
                     encodedContent = encode_C2_chart(chart)
                 }
 
@@ -292,14 +305,17 @@ function encode_Rv2_chart(chart) {
     return lines.join("\n")
 }
 
-function change_Rv2_chart_speed(chart, factor) {
+function change_Rv2_chart_speed(chart, params) {
+    let {speedFactor, horiScaleFactor} = params
 
-    chart.bpm *= factor
-    chart.page_shift /= factor
-    chart.page_size /= factor
+    chart.bpm *= speedFactor
+    chart.page_shift /= speedFactor
+    chart.page_size /= speedFactor
     chart.notes.forEach(note => {
-        note.timing /= factor
-        note.duration /= factor
+        note.timing /= speedFactor
+        note.duration /= speedFactor
+        // Scale around 0.5
+        note.x = ((note.x - 0.5) * horiScaleFactor) + 0.5
     })
 
 }
@@ -314,24 +330,26 @@ function parse_C2_chart(string) {
     return obj
 }
 
-function change_C2_chart_speed(chart, factor) {
+function change_C2_chart_speed(chart, params) {
+    let {speedFactor, horiScaleFactor} = params
+
     // chart.time_base never changed
-    chart.music_offset /= factor;
+    chart.music_offset /= speedFactor;
     // chart.page_list.forEach(page => {
-    //     page.start_tick /= factor;
-    //     page.end_tick /= factor;
+    //     page.start_tick /= speedFactor;
+    //     page.end_tick /= speedFactor;
     // })
     chart.tempo_list.forEach(tempo => {
-        tempo.tick /= factor;
-        tempo.value /= factor; // in nanoseconds
+        tempo.tick /= speedFactor;
+        tempo.value /= speedFactor; // in nanoseconds
     })
     // chart.event_order_list currently not supported
 
     // Change of tempo applies to the notes
-    // chart.note_list.forEach(note => {
-    //     note.tick /= factor;
-    //     note.hold_tick /= factor;
-    // })
+    chart.note_list.forEach(note => {
+        // Scale around 0.5
+        note.x = ((note.x - 0.5) * horiScaleFactor) + 0.5
+    })
 }
 
 function encode_C2_chart(chart) {
