@@ -336,6 +336,9 @@ function change_C2_chart_speed(chart, params) {
     let {speedFactor, horiScaleFactor} = params
 
     // chart.time_base never changed
+    if (chart.music_offset === undefined) {
+        chart.music_offset = 0;
+    }
     chart.music_offset /= speedFactor;
     // chart.page_list.forEach(page => {
     //     page.start_tick /= speedFactor;
